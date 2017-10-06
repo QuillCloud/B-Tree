@@ -270,8 +270,6 @@ btree<T>& btree<T>::operator=(const btree<T>& rhs) {
 template <typename T>
 btree<T>& btree<T>::operator=(btree<T>&& rhs) {
     if (this != &rhs) {
-        delete root;
-        delete head_;
         Node_Max = std::move(rhs.Node_Max);
         root = std::move(rhs.root);
         head_ = std::move(rhs.head_);
