@@ -257,6 +257,8 @@ btree<T>::btree(btree<T>&& original) {
 template <typename T>
 btree<T>& btree<T>::operator=(const btree<T>& rhs) {
     if (this != &rhs) {
+        delete root;
+        delete head_;
         auto copy = copy_recrusion(rhs.root, nullptr);
         Node_Max = rhs.Node_Max;
         root = copy.first;
@@ -268,6 +270,8 @@ btree<T>& btree<T>::operator=(const btree<T>& rhs) {
 template <typename T>
 btree<T>& btree<T>::operator=(btree<T>&& rhs) {
     if (this != &rhs) {
+        delete root;
+        delete head_;
         Node_Max = std::move(rhs.Node_Max);
         root = std::move(rhs.root);
         head_ = std::move(rhs.head_);
