@@ -92,15 +92,15 @@ T* btree_Iterator<T>::operator->() const {
 template <typename T>
 btree_Iterator<T>& btree_Iterator<T>::operator++() {
     assert(pointee_ != nullptr);
-    pointee_ = pointee_->getNext();
+    pointee_ = pointee_->next_;
     return *this;
 }
 
 template <typename T>
 btree_Iterator<T>& btree_Iterator<T>::operator--() {
     if (pointee_ != nullptr) {
-        assert(pointee_->getPre() != nullptr);
-        pointee_ = pointee_->getPre();
+        assert(pointee_->pre_ != nullptr);
+        pointee_ = pointee_->pre_;
     } else {
         pointee_ = tail_;
     }
@@ -111,7 +111,7 @@ template <typename T>
 btree_Iterator<T> btree_Iterator<T>::operator++(int) {
     assert(pointee_ != nullptr);
     auto ptCopy = pointee_;
-    pointee_ = pointee_->getNext();
+    pointee_ = pointee_->next_;
     return ptCopy;
 }
 
@@ -119,8 +119,8 @@ template <typename T>
 btree_Iterator<T> btree_Iterator<T>::operator--(int) {
     auto ptCopy = pointee_;
     if (pointee_ != nullptr) {
-        assert(pointee_->getPre() != nullptr);
-        pointee_ = pointee_->getPre();
+        assert(pointee_->pre_ != nullptr);
+        pointee_ = pointee_->pre_;
     } else {
         pointee_ = tail_;
     }
@@ -145,15 +145,15 @@ T* btree_Reverse_Iterator<T>::operator->() const {
 template <typename T>
 btree_Reverse_Iterator<T>& btree_Reverse_Iterator<T>::operator++() {
     assert(pointee_ != nullptr);
-    pointee_ = pointee_->getPre();
+    pointee_ = pointee_->pre_;
     return *this;
 }
 
 template <typename T>
 btree_Reverse_Iterator<T>& btree_Reverse_Iterator<T>::operator--() {
     if (pointee_ != nullptr) {
-        assert( pointee_->getNext() != nullptr);
-        pointee_ = pointee_->getNext();
+        assert( pointee_->next_ != nullptr);
+        pointee_ = pointee_->next_;
     } else {
         pointee_ = head_;
     }
@@ -164,7 +164,7 @@ template <typename T>
 btree_Reverse_Iterator<T> btree_Reverse_Iterator<T>::operator++(int) {
     assert(pointee_ != nullptr);
     auto ptCopy = pointee_;
-    pointee_ = pointee_->getPre();
+    pointee_ = pointee_->pre_;
     return ptCopy;
 }
 
@@ -172,8 +172,8 @@ template <typename T>
 btree_Reverse_Iterator<T> btree_Reverse_Iterator<T>::operator--(int) {
     auto ptCopy = pointee_;
     if (pointee_ != nullptr) {
-        assert( pointee_->getNext() != nullptr);
-        pointee_ = pointee_->getNext();
+        assert( pointee_->next_ != nullptr);
+        pointee_ = pointee_->next_;
     } else {
         pointee_ = head_;
     }
@@ -198,15 +198,15 @@ T* btree_Const_Iterator<T>::operator->() const {
 template <typename T>
 btree_Const_Iterator<T>& btree_Const_Iterator<T>::operator++() {
     assert(pointee_ != nullptr);
-    pointee_ = pointee_->getNext();
+    pointee_ = pointee_->next_;
     return *this;
 }
 
 template <typename T>
 btree_Const_Iterator<T>& btree_Const_Iterator<T>::operator--() {
     if (pointee_ != nullptr) {
-        assert(pointee_->getPre() != nullptr);
-        pointee_ = pointee_->getPre();
+        assert(pointee_->pre_ != nullptr);
+        pointee_ = pointee_->pre_;
     } else {
         pointee_ = tail_;
     }
@@ -217,7 +217,7 @@ template <typename T>
 btree_Const_Iterator<T> btree_Const_Iterator<T>::operator++(int) {
     assert(pointee_ != nullptr);
     auto ptCopy = pointee_;
-    pointee_ = pointee_->getNext();
+    pointee_ = pointee_->next_;
     return ptCopy;
 }
 
@@ -225,8 +225,8 @@ template <typename T>
 btree_Const_Iterator<T> btree_Const_Iterator<T>::operator--(int) {
     auto ptCopy = pointee_;
     if (pointee_ != nullptr) {
-        assert(pointee_->getPre() != nullptr);
-        pointee_ = pointee_->getPre();
+        assert(pointee_->pre_ != nullptr);
+        pointee_ = pointee_->pre_;
     } else {
         pointee_ = tail_;
     }
@@ -251,15 +251,15 @@ T* btree_Const_Reverse_Iterator<T>::operator->() const {
 template <typename T>
 btree_Const_Reverse_Iterator<T>& btree_Const_Reverse_Iterator<T>::operator++() {
     assert(pointee_ != nullptr);
-    pointee_ = pointee_->getPre();
+    pointee_ = pointee_->pre_;
     return *this;
 }
 
 template <typename T>
 btree_Const_Reverse_Iterator<T>& btree_Const_Reverse_Iterator<T>::operator--() {
     if (pointee_ != nullptr) {
-        assert( pointee_->getNext() != nullptr);
-        pointee_ = pointee_->getNext();
+        assert( pointee_->next_ != nullptr);
+        pointee_ = pointee_->next_;
     } else {
         pointee_ = head_;
     }
@@ -270,7 +270,7 @@ template <typename T>
 btree_Const_Reverse_Iterator<T> btree_Const_Reverse_Iterator<T>::operator++(int) {
     assert(pointee_ != nullptr);
     auto ptCopy = pointee_;
-    pointee_ = pointee_->getPre();
+    pointee_ = pointee_->pre_;
     return ptCopy;
 }
 
@@ -278,8 +278,8 @@ template <typename T>
 btree_Const_Reverse_Iterator<T> btree_Const_Reverse_Iterator<T>::operator--(int) {
     auto ptCopy = pointee_;
     if (pointee_ != nullptr) {
-        assert( pointee_->getNext() != nullptr);
-        pointee_ = pointee_->getNext();
+        assert( pointee_->next_ != nullptr);
+        pointee_ = pointee_->next_;
     } else {
         pointee_ = head_;
     }

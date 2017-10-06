@@ -22,6 +22,8 @@
 
 // we do this to avoid compiler errors about non-template friends
 // what do we do, remember? :)
+template <typename T>
+std::ostream& operator<<(std::ostream &os, const btree<T> &tree);
 
 template <typename T> class btree {
 public:
@@ -102,7 +104,7 @@ public:
     * @param tree a const reference to a B-Tree object
     * @return a reference to os
     */
-    //friend std::ostream& operator<< <T> (std::ostream& os, const btree<T>& tree);
+    friend std::ostream& operator<< <T> (std::ostream& os, const btree<T>& tree);
 
 
     /**
@@ -139,7 +141,7 @@ public:
     * @return an iterator to the matching element, or whatever the
     *         non-const end() returns if no such match was ever found.
     */
-    //iterator find(const T& elem);
+    iterator find(const T& elem);
 
     /**
     * Identical in functionality to the non-const version of find,
@@ -150,7 +152,7 @@ public:
     * @return an iterator to the matching element, or whatever the
     *         const end() returns if no such match was ever found.
     */
-    //const_iterator find(const T& elem) const;
+    const_iterator find(const T& elem) const;
 
     /**
     * Operation which inserts the specified element
@@ -206,7 +208,6 @@ private:
         }
         size_t size() { return Elems_list.size(); }
         void setChild(Node *nd) { child_ = nd; }
-        Node*& getChild() { return child_; }
         void output();
         std::vector<Elem*> Elems_list;
         Node *child_;
@@ -217,9 +218,6 @@ private:
         void setPre(Elem *ele) { pre_ = ele; }
         void setNext(Elem *ele) { next_ = ele; }
         void setChild(Node *nd) { child_ = nd; }
-        Elem*& getPre() { return pre_; }
-        Elem*& getNext() { return next_; }
-        Node*& getChild() { return child_; }
         ~Elem() {
             delete next_;
             delete child_;
@@ -234,7 +232,6 @@ private:
     size_t Node_Max;
     Node *root;
     Elem *head_, *tail_;
-
 };
 
 template <typename T>
@@ -284,6 +281,81 @@ btree<T>& btree<T>::operator=(btree<T>&& rhs) {
 }
 
 template <typename T>
+std::ostream& operator<<(std::ostream &os, const btree<T> &tree) {
+    std::deque<typename btree<T>::Node*> node_list;
+    node_list.push_back(tree.root);
+    while (!node_list.empty()) {
+        auto cur_node = node_list.front();
+        node_list.pop_front();
+        std::for_each (cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&os] (const auto& i) {
+            os << (*i).value() << " ";
+        });
+        std::for_each(cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&node_list] (const auto& i) {
+            if (i->child_ != nullptr)
+                node_list.push_back(i->child_);
+        });
+        if (cur_node->child_ != nullptr)
+            node_list.push_back(cur_node->child_);
+    }
+    os << '\b';
+    return os;
+}
+
+template <typename T>
+typename btree<T>::iterator btree<T>::find(const T &elem) {
+    auto current_node = root;
+    do {
+        auto find_ele = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const auto& ele) {
+            return (elem <= ele->value());
+        });
+        if (find_ele != current_node->Elems_list.end()) {
+            if ((*find_ele)->value() == elem) {
+                return iterator((*find_ele));
+            } else {
+                if ((*find_ele)->child_ != nullptr) {
+                    current_node = (*find_ele)->child_;
+                } else {
+                    return end();
+                }
+            }
+        } else {
+            if (current_node->child_ != nullptr) {
+                current_node = current_node->child_;
+            } else {
+                return end();
+            }
+        }
+    } while (1);
+}
+
+template <typename T>
+typename btree<T>::const_iterator btree<T>::find(const T& elem) const {
+    auto current_node = root;
+    do {
+        auto find_ele = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const auto& ele) {
+            return (elem <= ele->value());
+        });
+        if (find_ele != current_node->Elems_list.end()) {
+            if ((*find_ele)->value() == elem) {
+                return const_iterator((*find_ele));
+            } else {
+                if ((*find_ele)->child_ != nullptr) {
+                    current_node = (*find_ele)->child_;
+                } else {
+                    return cend();
+                }
+            }
+        } else {
+            if (current_node->child_ != nullptr) {
+                current_node = current_node->child_;
+            } else {
+                return cend();
+            }
+        }
+    } while (1);
+}
+
+template <typename T>
 std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
     // if the tree is empty
     if (!head_) {
@@ -305,10 +377,10 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         std::cout << "duplicated" << std::endl;
                         return std::make_pair(iterator(), false);
                     } else {
-                        Elem *newElem = new Elem(elem, (*insert_it)->getPre(), *insert_it);
+                        Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
                         (*insert_it)->setPre(newElem);
-                        if (newElem->getPre() != nullptr) {
-                            newElem->getPre()->setNext(newElem);
+                        if (newElem->pre_ != nullptr) {
+                            newElem->pre_->setNext(newElem);
                         } else {
                             head_ = newElem;
                         }
@@ -317,10 +389,10 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                     }
                 } else {
                     --insert_it;
-                    Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->getNext());
+                    Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
                     (*insert_it)->setNext(newElem);
-                    if (newElem->getNext() != nullptr) {
-                        newElem->getNext()->setPre(newElem);
+                    if (newElem->next_ != nullptr) {
+                        newElem->next_->setPre(newElem);
                     } else {
                         tail_ = newElem;
                     }
@@ -337,16 +409,16 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         std::cout << "duplicated2" << std::endl;
                         return std::make_pair(iterator(), false);
                     } else {
-                        if ((*insert_it)->getChild() != nullptr) {
-                            current_node = (*insert_it)->getChild();
+                        if ((*insert_it)->child_ != nullptr) {
+                            current_node = (*insert_it)->child_;
                         } else {
                             Node *newNode = new Node();
-                            Elem *newElem = new Elem(elem, (*insert_it)->getPre(), *insert_it);
+                            Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
                             (*insert_it)->setChild(newNode);
                             (*insert_it)->setPre(newElem);
                             newNode->Elems_list.push_back(newElem);
-                            if (newElem->getPre() != nullptr) {
-                                (newElem->getPre())->setNext(newElem);
+                            if (newElem->pre_ != nullptr) {
+                                (newElem->pre_)->setNext(newElem);
                             } else {
                                 head_ = newElem;
                             }
@@ -355,17 +427,17 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                     }
                 } else {
                     // last child is exist
-                    if (current_node->getChild() != nullptr) {
-                        current_node = current_node->getChild();
+                    if (current_node->child_ != nullptr) {
+                        current_node = current_node->child_;
                     } else {
                         --insert_it;
                         Node *newNode = new Node();
-                        Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->getNext());
+                        Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
                         newNode->Elems_list.push_back(newElem);
                         current_node->setChild(newNode);
                         (*insert_it)->setNext(newElem);
-                        if (newElem->getNext() != nullptr) {
-                            (newElem->getNext())->setPre(newElem);
+                        if (newElem->next_ != nullptr) {
+                            (newElem->next_)->setPre(newElem);
                         } else {
                             tail_ = newElem;
                         }
@@ -389,31 +461,31 @@ void btree<T>::test() {
         node_list.pop_front();
         std::cout << "node" << std::endl;
         cur_node->output();
-        std::for_each(cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&node_list] (auto& i) {
-            if (i->getChild() != nullptr)
-                node_list.push_back(i->getChild());
+        std::for_each(cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&node_list] (const auto& i) {
+            if (i->child_ != nullptr)
+                node_list.push_back(i->child_);
         });
-        if (cur_node->getChild() != nullptr)
-            node_list.push_back(cur_node->getChild());
+        if (cur_node->child_ != nullptr)
+            node_list.push_back(cur_node->child_);
     }
 }
 
 template <typename T>
 std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_recrusion(const Node* nd, Elem* pre) {
     Node *resultNode = new Node();
-    for (Elem* i : nd->Elems_list) {
+    for (auto i : nd->Elems_list) {
         Elem *copy_i = new Elem(i->value(), nullptr, nullptr);
-        if (i->getChild() != nullptr) {
-            std::pair<Node*, Elem*> Nd_Ele = copy_recrusion(i->getChild(), pre);
+        if (i->child_ != nullptr) {
+            auto Nd_Ele = copy_recrusion(i->child_, pre);
             copy_i->setChild(Nd_Ele.first);
             copy_i->setPre(Nd_Ele.second);
-            copy_i->getPre()->setNext(copy_i);
+            copy_i->pre_->setNext(copy_i);
             resultNode->Elems_list.push_back(copy_i);
             pre = copy_i;
         } else {
             copy_i->setPre(pre);
-            if (copy_i->getPre() != nullptr) {
-                copy_i->getPre()->setNext(copy_i);
+            if (copy_i->pre_ != nullptr) {
+                copy_i->pre_->setNext(copy_i);
             } else {
                 head_ = copy_i;
             }
@@ -422,7 +494,7 @@ std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_recr
         }
     }
     if (nd->child_ != nullptr) {
-        std::pair<Node*, Elem*> Nd_Ele = copy_recrusion(nd->child_, pre);
+        auto Nd_Ele = copy_recrusion(nd->child_, pre);
         resultNode->setChild(Nd_Ele.first);
         pre = Nd_Ele.second;
     }
