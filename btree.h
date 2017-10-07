@@ -1,123 +1,52 @@
-/**
- * The btree is a linked structure which operates much like
- * a binary search tree, save the fact that multiple client
- * elements are stored in a single node.  Whereas a single element
- * would partition the tree into two ordered subtrees, a node
- * that stores m client elements partition the tree
- * into m + 1 sorted subtrees.
- */
-
 #ifndef BTREE_H
 #define BTREE_H
 
 #include <iostream>
 #include <cstddef>
 #include <utility>
-//#include <mach/mach_types.h>
 #include <vector>
 #include <deque>
-
-// we better include the iterator
 #include "btree_iterator.h"
 
-// we do this to avoid compiler errors about non-template friends
-// what do we do, remember? :)
+// Declare of output operator <<
 template <typename T>
 std::ostream& operator<<(std::ostream &os, const btree<T> &tree);
 
 template <typename T> class btree {
 public:
+    // Friend iterator classes
     friend class btree_Iterator<T>;
     friend class btree_Reverse_Iterator<T>;
     friend class btree_Const_Iterator<T>;
     friend class btree_Const_Reverse_Iterator<T>;
+
+    // Iterator typedefs
     typedef btree_Iterator<T> iterator;
     typedef btree_Reverse_Iterator<T> reverse_iterator;
     typedef btree_Const_Iterator<T> const_iterator;
     typedef btree_Reverse_Iterator<T> const_reverse_iterator;
-    /** Hmm, need some iterator typedefs here... friends? **/
 
-    /**
-    * Constructs an empty btree.  Note that
-    * the elements stored in your btree must
-    * have a well-defined zero-arg constructor,
-    * copy constructor, operator=, and destructor.
-    * The elements must also know how to order themselves
-    * relative to each other by implementing operator<
-    * and operator==. (These are already implemented on
-    * behalf of all built-ins: ints, doubles, strings, etc.)
-    *
-    * @param maxNodeElems the maximum number of elements
-    *        that can be stored in each B-Tree node
-    */
+    // Constructs of btree
+    // argument 'maxNodeElems' is maximum number of element that can be stored in each B-Tree node
     btree(size_t maxNodeElems = 40) : Node_Max(maxNodeElems), root(new Node()), head_(nullptr), tail_(nullptr) {}
 
-    /**
-    * The copy constructor and  assignment operator.
-    * They allow us to pass around B-Trees by value.
-    * Although these operations are likely to be expensive
-    * they make for an interesting programming exercise.
-    * Implement these operations using value semantics and
-    * make sure they do not leak memory.
-    */
-
-    /**
-    * Copy constructor
-    * Creates a new B-Tree as a copy of original.
-    *
-    * @param original a const lvalue reference to a B-Tree object
-    */
+    // Copy constructor
     btree(const btree<T>& original);
 
-    /**
-    * Move constructor
-    * Creates a new B-Tree by "stealing" from original.
-    *
-    * @param original an rvalue reference to a B-Tree object
-    */
+    // Move constructor
     btree(btree<T>&& original);
 
-
-    /**
-    * Copy assignment
-    * Replaces the contents of this object with a copy of rhs.
-    *
-    * @param rhs a const lvalue reference to a B-Tree object
-    */
+    // Copy assignment
     btree<T>& operator=(const btree<T>& rhs);
 
-    /**
-    * Move assignment
-    * Replaces the contents of this object with the "stolen"
-    * contents of original.
-    *
-    * @param rhs a const reference to a B-Tree object
-    */
+    // Move assignment
     btree<T>& operator=(btree<T>&& rhs);
 
-    /**
-    * Puts a breadth-first traversal of the B-Tree onto the output
-    * stream os. Elements must, in turn, support the output operator.
-    * Elements are separated by space. Should not output any newlines.
-    *
-    * @param os a reference to a C++ output stream
-    * @param tree a const reference to a B-Tree object
-    * @return a reference to os
-    */
+    // Overload of operator '<<'
+    // Puts a breadth-first traversal of the B-Tree onto the output stream os.
     friend std::ostream& operator<< <T> (std::ostream& os, const btree<T>& tree);
 
-
-    /**
-    * The following can go here
-    * -- begin()
-    * -- end()
-    * -- rbegin()
-    * -- rend()
-    * -- cbegin()
-    * -- cend()
-    * -- crbegin()
-    * -- crend()
-    */
+    // begin()/end()    rbegin()/rend()    cbegin()/cend()      crbegin()/crend()
     iterator begin() const { return iterator(head_, tail_); }
     iterator end() const { return iterator(nullptr, tail_); }
     reverse_iterator rbegin() const { return reverse_iterator(tail_, head_); }
@@ -127,127 +56,101 @@ public:
     const_reverse_iterator crbegin() const { return const_reverse_iterator(tail_, head_); }
     const_reverse_iterator crend() const { return const_reverse_iterator(nullptr, head_); }
 
-    /**
-    * Returns an iterator to the matching element, or whatever
-    * the non-const end() returns if the element could
-    * not be found.
-    *
-    * @param elem the client element we are trying to match.  The elem,
-    *        if an instance of a true class, relies on the operator< and
-    *        and operator== methods to compare elem to elements already
-    *        in the btree.  You must ensure that your class implements
-    *        these things, else code making use of btree<T>::find will
-    *        not compile.
-    * @return an iterator to the matching element, or whatever the
-    *         non-const end() returns if no such match was ever found.
-    */
+    // Function for find the elements in the B-Tree
     iterator find(const T& elem);
 
-    /**
-    * Identical in functionality to the non-const version of find,
-    * save the fact that what's pointed to by the returned iterator
-    * is deemed as const and immutable.
-    *
-    * @param elem the client element we are trying to match.
-    * @return an iterator to the matching element, or whatever the
-    *         const end() returns if no such match was ever found.
-    */
+    //Identical in functionality to the non-const version of find.
     const_iterator find(const T& elem) const;
-
-    /**
-    * Operation which inserts the specified element
-    * into the btree if a matching element isn't already
-    * present.  In the event where the element truly needs
-    * to be inserted, the size of the btree is effectively
-    * increases by one, and the pair that gets returned contains
-    * an iterator to the inserted element and true in its first and
-    * second fields.
-    *
-    * If a matching element already exists in the btree, nothing
-    * is added at all, and the size of the btree stays the same.  The
-    * returned pair still returns an iterator to the matching element, but
-    * the second field of the returned pair will store false.  This
-    * second value can be checked to after an insertion to decide whether
-    * or not the btree got bigger.
-    *
-    * The insert method makes use of T's zero-arg constructor and
-    * operator= method, and if these things aren't available,
-    * then the call to btree<T>::insert will not compile.  The implementation
-    * also makes use of the class's operator== and operator< as well.
-    *
-    * @param elem the element to be inserted.
-    * @return a pair whose first field is an iterator positioned at
-    *         the matching element in the btree, and whose second field
-    *         stores true if and only if the element needed to be added
-    *         because no matching element was there prior to the insert call.
-    */
+    
+    // Insert elements into the B-Tree
     std::pair<iterator, bool> insert(const T& elem);
 
-    /**
-    * Disposes of all internal resources, which includes
-    * the disposal of any client objects previously
-    * inserted using the insert operation.
-    * Check that your implementation does not leak memory!
-    */
+    // Destructor part
     ~btree() {
         delete root;
         delete head_;
         root = 0;
         head_ = 0;
     };
-    void test();
 private:
+    // Declare two struct Node and Elem
     struct Node;
     struct Elem;
-    std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> copy_recrusion(const Node* nd, Elem* pre);
+    
+    // Private function that make copy of Node.
+    // @Param: nd is the copy target node, pre is the parent element of this node (for root is nullptr)
+    // @Return: return a pair, first is copied node, second is tail of tree(including copied node and its child node)
+    std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> copy_node(const Node* nd, Elem* pre);
+
+    // struct Node, represent the Nodes in B-Tree
     struct Node {
+        // constructor and destructor
         Node() : child_(nullptr) {}
         ~Node() {
             delete child_;
             child_ = 0;
         }
+        // get size of Node
         size_t size() { return Elems_list.size(); }
+        // set the pointer child_ point to Node's last child
         void setChild(Node *nd) { child_ = nd; }
-        void output();
+        // Elems_list store the pointers point to elements in Node
         std::vector<Elem*> Elems_list;
+        // a pointer point to the Node's last child
         Node *child_;
     };
+    // struct Elem, represent the Elements in B-Tree
     struct Elem {
+        // constructor and destructor
         Elem(const T& t, Elem *pre, Elem *next) : elem_(t), pre_(pre), next_(next), child_(nullptr) {}
-        const T& value() const { return elem_; }
-        void setPre(Elem *ele) { pre_ = ele; }
-        void setNext(Elem *ele) { next_ = ele; }
-        void setChild(Node *nd) { child_ = nd; }
         ~Elem() {
             delete next_;
             delete child_;
             next_ = 0;
             child_ = 0;
         }
+        // get value of element
+        const T& value() const { return elem_; }
+        // set pointer 'pre_' to previous element
+        void setPre(Elem *ele) { pre_ = ele; }
+        // set pointer 'next_' to next element
+        void setNext(Elem *ele) { next_ = ele; }
+        // set pointer 'child_' point to child of Node in the location of this element
+        void setChild(Node *nd) { child_ = nd; }
+
+        // 'elem_' store the value of element
         T elem_;
+        // pointers point to previous and next elements
         Elem *pre_, *next_;
+        // pointer point to the child of Node in the location of this element
         Node *child_;
     };
-    // The details of your implementation go here
+    // maximum number of element that can be stored in each B-Tree node
     size_t Node_Max;
+    // pointer point to the root node of B-Tree
     Node *root;
+    // pointers point to the head and tail elements
     Elem *head_, *tail_;
 };
 
+// Copy constructor
 template <typename T>
 btree<T>::btree(const btree<T>& original) {
-    auto copy = copy_recrusion(original.root, nullptr);
+    // use function copy_node to get copy of original's root
+    auto copy = copy_node(original.root, nullptr);
     Node_Max = original.Node_Max;
     root = copy.first;
     tail_ = copy.second;
 }
 
+// Move constructor
 template <typename T>
 btree<T>::btree(btree<T>&& original) {
     Node_Max = std::move(original.Node_Max);
     root = std::move(original.root);
     head_ = std::move(original.head_);
     tail_ = std::move(original.tail_);
+    // set original to empty
     original.Node_Max = 0;
     original.root = new Node();
     original.head_ = nullptr;
@@ -257,9 +160,11 @@ btree<T>::btree(btree<T>&& original) {
 template <typename T>
 btree<T>& btree<T>::operator=(const btree<T>& rhs) {
     if (this != &rhs) {
+        // delete 'root' and 'head_' to avoid memory leak
         delete root;
         delete head_;
-        auto copy = copy_recrusion(rhs.root, nullptr);
+        // use function copy_node to get copy of original's root
+        auto copy = copy_node(rhs.root, nullptr);
         Node_Max = rhs.Node_Max;
         root = copy.first;
         tail_ = copy.second;
@@ -270,10 +175,14 @@ btree<T>& btree<T>::operator=(const btree<T>& rhs) {
 template <typename T>
 btree<T>& btree<T>::operator=(btree<T>&& rhs) {
     if (this != &rhs) {
+        // delete 'root' and 'head_' to avoid memory leak
+        delete root;
+        delete head_;
         Node_Max = std::move(rhs.Node_Max);
         root = std::move(rhs.root);
         head_ = std::move(rhs.head_);
         tail_ = std::move(rhs.tail_);
+        // set original to empty
         rhs.Node_Max = 0;
         rhs.root = new Node();
         rhs.head_ = nullptr;
@@ -284,36 +193,44 @@ btree<T>& btree<T>::operator=(btree<T>&& rhs) {
 
 template <typename T>
 std::ostream& operator<<(std::ostream &os, const btree<T> &tree) {
+    // use a deque to store each nodes, start from root
     std::deque<typename btree<T>::Node*> node_list;
     node_list.push_back(tree.root);
     while (!node_list.empty()) {
+        // get first node in deque
         auto cur_node = node_list.front();
         node_list.pop_front();
-        std::for_each (cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&os] (const auto& i) {
+        // output node's element value and push back child nodes at end of deque
+        std::for_each (cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&os, &node_list] (const auto& i) {
             os << (*i).value() << " ";
-        });
-        std::for_each(cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&node_list] (const auto& i) {
             if (i->child_ != nullptr)
                 node_list.push_back(i->child_);
         });
+        // push back last child node to deque if exists
         if (cur_node->child_ != nullptr)
             node_list.push_back(cur_node->child_);
     }
+    // delete last space
     os << '\b';
     return os;
 }
 
 template <typename T>
 typename btree<T>::iterator btree<T>::find(const T &elem) {
+    // start with root
     auto current_node = root;
     do {
+        // find first element that equal or greater than target element
         auto find_ele = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const auto& ele) {
             return (elem <= ele->value());
         });
         if (find_ele != current_node->Elems_list.end()) {
+            // if the found element that is equal to target element, return that element's iterator
             if ((*find_ele)->value() == elem) {
                 return iterator((*find_ele));
             } else {
+                // if the found element is greater than target element
+                // if it has a child node, set current node to child node for next loop, if not, return end()
                 if ((*find_ele)->child_ != nullptr) {
                     current_node = (*find_ele)->child_;
                 } else {
@@ -321,6 +238,8 @@ typename btree<T>::iterator btree<T>::find(const T &elem) {
                 }
             }
         } else {
+            // cannot find the element that equal or greater than target element
+            // check if last child node exists, set current node to child node for next loop, if not return end()
             if (current_node->child_ != nullptr) {
                 current_node = current_node->child_;
             } else {
@@ -332,6 +251,7 @@ typename btree<T>::iterator btree<T>::find(const T &elem) {
 
 template <typename T>
 typename btree<T>::const_iterator btree<T>::find(const T& elem) const {
+    // function body is quite similar to non-const 'find', but return type is const_iterator
     auto current_node = root;
     do {
         auto find_ele = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const auto& ele) {
@@ -359,7 +279,7 @@ typename btree<T>::const_iterator btree<T>::find(const T& elem) const {
 
 template <typename T>
 std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
-    // if the tree is empty
+    // if the tree is empty, set head_ and add param element to the root node
     if (!head_) {
         Elem *newElem = new Elem(elem, nullptr, nullptr);
         head_ = newElem;
@@ -367,18 +287,23 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
         root->Elems_list.push_back(newElem);
         return std::make_pair(iterator(head_), true);
     } else {
+        // if tree is not empty, start with root node
         auto current_node = root;
-        while (1) {
+        do {
+            // check if the current node is full
             if (current_node->size() < Node_Max) {
+                // if current node is not full
+                // find the first element in node that is equal or greater than param element
                 auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const Elem *ele) {
                     return (elem <= ele->value());
                 });
-                // if not find, insert at end
                 if (insert_it != current_node->Elems_list.end()) {
+                    // if found element is equal to param node, return pair with end() and false
                     if ((*insert_it)->value() == elem) {
-                        std::cout << "duplicated" << std::endl;
-                        return std::make_pair(iterator(), false);
+                        return std::make_pair(end(), false);
                     } else {
+                        // if found element is greater than param element
+                        // insert the param element before the found element (adjust link state before insert)
                         Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
                         (*insert_it)->setPre(newElem);
                         if (newElem->pre_ != nullptr) {
@@ -390,6 +315,8 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         return std::make_pair(iterator(newElem), true);
                     }
                 } else {
+                    // if cannot find element in node that is equal or greater than insert element
+                    // insert the param element at end of current node (adjust link state before insert)
                     --insert_it;
                     Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
                     (*insert_it)->setNext(newElem);
@@ -403,17 +330,23 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                     return std::make_pair(iterator(newElem), true);
                 }
             } else {
+                // if current node is not full
+                // find the first element in node that is equal or greater than insert element
                 auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const Elem *ele) {
                     return (elem <= ele->value());
                 });
                 if (insert_it != current_node->Elems_list.end()) {
+                    // if found element is equal to param node, return pair with end() and false
                     if ((*insert_it)->value() == elem) {
-                        std::cout << "duplicated2" << std::endl;
                         return std::make_pair(iterator(), false);
                     } else {
+                        // if found element is greater than param element
+                        // check if it has a child node, if so, set current node to child node for next loop
                         if ((*insert_it)->child_ != nullptr) {
                             current_node = (*insert_it)->child_;
                         } else {
+                            // if has no child node, create a child node and insert the param element
+                            // (adjust link state before insert)
                             Node *newNode = new Node();
                             Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
                             (*insert_it)->setChild(newNode);
@@ -428,10 +361,13 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         }
                     }
                 } else {
-                    // last child is exist
+                    // if cannot find element in node that is equal or greater than insert element
+                    // check if last child node exists, if so, set current node to last child node for next loop
                     if (current_node->child_ != nullptr) {
                         current_node = current_node->child_;
                     } else {
+                        // if no last child node, create a child node for current node
+                        // then insert param element to child node (adjust link state before insert)
                         --insert_it;
                         Node *newNode = new Node();
                         Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
@@ -447,68 +383,51 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                     }
                 }
             }
-        }
-        return std::make_pair(iterator(), false);
-
-    }
-
-}
-
-template <typename T>
-void btree<T>::test() {
-    std::deque<Node*> node_list;
-    node_list.push_back(root);
-    while (!node_list.empty()) {
-        auto cur_node = node_list.front();
-        node_list.pop_front();
-        std::cout << "node" << std::endl;
-        cur_node->output();
-        std::for_each(cur_node->Elems_list.begin(), cur_node->Elems_list.end(), [&node_list] (const auto& i) {
-            if (i->child_ != nullptr)
-                node_list.push_back(i->child_);
-        });
-        if (cur_node->child_ != nullptr)
-            node_list.push_back(cur_node->child_);
+        } while (1);
     }
 }
 
+// A recursion function for copy the node
+// In this class used for copy root node, so usually start with the root node and nullptr
 template <typename T>
-std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_recrusion(const Node* nd, Elem* pre) {
+std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_node(const Node* nd, Elem* pre) {
+    // create Node 'resultNode' which is first element of return pair
     Node *resultNode = new Node();
+    // go through each element in param node
     for (auto i : nd->Elems_list) {
+        // create new Elem which has same value of original node
         Elem *copy_i = new Elem(i->value(), nullptr, nullptr);
         if (i->child_ != nullptr) {
-            auto Nd_Ele = copy_recrusion(i->child_, pre);
+            // if original node has a child
+            // use 'copy_node' function to get copy of child node
+            auto Nd_Ele = copy_node(i->child_, pre);
+            // then update copied Elem's link(including child node) and the it's previous node's link state
             copy_i->setChild(Nd_Ele.first);
             copy_i->setPre(Nd_Ele.second);
             copy_i->pre_->setNext(copy_i);
-            resultNode->Elems_list.push_back(copy_i);
-            pre = copy_i;
         } else {
+            // if original node has no child
+            // update copied Elem's link state and the it's previous node's link state
             copy_i->setPre(pre);
             if (copy_i->pre_ != nullptr) {
                 copy_i->pre_->setNext(copy_i);
             } else {
                 head_ = copy_i;
             }
-            resultNode->Elems_list.push_back(copy_i);
-            pre = copy_i;
         }
+        // update the 'pre' to copied Elem and push back copied Elem to 'resultNode'
+        pre = copy_i;
+        resultNode->Elems_list.push_back(copy_i);
     }
+    // check if param node has last child node, if so, get copy of it and update 'resultNode'
     if (nd->child_ != nullptr) {
-        auto Nd_Ele = copy_recrusion(nd->child_, pre);
+        auto Nd_Ele = copy_node(nd->child_, pre);
         resultNode->setChild(Nd_Ele.first);
         pre = Nd_Ele.second;
     }
+    // return the pair, first is copied node 'resultNode'
+    // second is 'pre', which is the tail element for tree(including 'resultNode' and its child node)
     return std::make_pair(resultNode, pre);
-}
-
-template <typename T>
-void btree<T>::Node::output() {
-    for (auto i : Elems_list) {
-        std::cout << (*i).value() << " ";
-    }
-    std::cout << std::endl;
 }
 
 #endif

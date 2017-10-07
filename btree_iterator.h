@@ -5,13 +5,9 @@
 #include <assert.h>
 #include "btree.h"
 
-/**
- * You MUST implement the btree iterators as (an) external class(es) in this file.
- * Failure to do so will result in a total mark of 0 for this deliverable.
- **/
-
 template <typename T> class btree;
 
+// iterator
 template <typename T> class btree_Iterator {
 public:
     typedef std::ptrdiff_t                     difference_type;
@@ -20,6 +16,8 @@ public:
     typedef T*                                 pointer;
     typedef T&                                 reference;
 
+    // constructor
+    // param including 'tail', if do decrement operator with end(), then iterator point to 'tail'
     btree_Iterator(typename btree<T>::Elem *pointee = nullptr, typename btree<T>::Elem *tail = nullptr)
             : pointee_(pointee), tail_(tail) {}
     reference operator*() const;
@@ -35,6 +33,7 @@ private:
     typename btree<T>::Elem *tail_;
 };
 
+// reverse_iterator
 template <typename T> class btree_Reverse_Iterator {
 public:
     typedef std::ptrdiff_t                     difference_type;
@@ -43,6 +42,8 @@ public:
     typedef T*                                 pointer;
     typedef T&                                 reference;
 
+    // constructor
+    // param including 'head', if do decrement operator with rend(), then iterator point to 'head'
     btree_Reverse_Iterator(typename btree<T>::Elem *pointee = nullptr, typename btree<T>::Elem *head = nullptr)
             : pointee_(pointee), head_(head) {}
     reference operator*() const;
@@ -58,18 +59,19 @@ private:
     typename btree<T>::Elem *head_;
 };
 
+// const_iterator, similar to 'iterator'
 template <typename T> class btree_Const_Iterator {
 public:
     typedef std::ptrdiff_t                     difference_type;
     typedef std::forward_iterator_tag          iterator_category;
     typedef T                                  value_type;
-    typedef T*                                 pointer;
-    typedef T&                                 reference;
+    typedef const T*                           pointer;
+    typedef const T&                           reference;
 
     btree_Const_Iterator(typename btree<T>::Elem *pointee = nullptr, typename btree<T>::Elem *tail = nullptr)
             : pointee_(pointee), tail_(tail) {}
-    T& operator*() const;
-    T* operator->() const;
+    reference operator*() const;
+    pointer operator->() const;
     btree_Const_Iterator<T>& operator++();
     btree_Const_Iterator<T>& operator--();
     btree_Const_Iterator<T> operator++(int);
@@ -81,13 +83,14 @@ private:
     typename btree<T>::Elem *tail_;
 };
 
+// const_reverse_iterator, similar to 'reverse_iterator'
 template <typename T> class btree_Const_Reverse_Iterator {
 public:
     typedef std::ptrdiff_t                     difference_type;
     typedef std::forward_iterator_tag          iterator_category;
     typedef T                                  value_type;
-    typedef T*                                 pointer;
-    typedef T&                                 reference;
+    typedef const T*                           pointer;
+    typedef const T&                           reference;
 
     btree_Const_Reverse_Iterator(typename btree<T>::Elem *pointee = nullptr, typename btree<T>::Elem *head = nullptr)
             : pointee_(pointee), head_(head) {}
@@ -315,8 +318,5 @@ template <typename T>
 bool btree_Const_Reverse_Iterator<T>::operator==(const btree_Const_Reverse_Iterator<T>& other) const {
     return this->pointee_ == other.pointee_;
 }
-
-// iterator related interface stuff here; would be nice if you called your
-// iterator class btree_iterator (and possibly const_btree_iterator)
 
 #endif
