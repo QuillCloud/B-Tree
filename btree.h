@@ -7,6 +7,7 @@
 #include <vector>
 #include <deque>
 #include <algorithm>
+
 #include "btree_iterator.h"
 
 // Declare of output operator <<
@@ -51,16 +52,16 @@ public:
     const_iterator begin() const { return const_iterator(head_, tail_); }
     const_iterator end() const { return const_iterator(nullptr, tail_); }
     // rbegin()/rend()
-    reverse_iterator rbegin() { return make_reverse_iterator(end()); }
-    reverse_iterator rend() { return make_reverse_iterator(begin()); }
-    reverse_iterator rbegin() const { return make_reverse_iterator(end()); }
-    reverse_iterator rend() const { return make_reverse_iterator(begin()); }
+    reverse_iterator rbegin() { return std::make_reverse_iterator(end()); }
+    reverse_iterator rend() { return std::make_reverse_iterator(begin()); }
+    reverse_iterator rbegin() const { return std::make_reverse_iterator(end()); }
+    reverse_iterator rend() const { return std::make_reverse_iterator(begin()); }
     // cbegin()/cend()
     const_iterator cbegin() const { return const_iterator(head_, tail_); }
     const_iterator cend() const { return const_iterator(nullptr, tail_); }
     // crbegin()/crend()
-    const_reverse_iterator crbegin() const { return make_reverse_iterator(cend()); }
-    const_reverse_iterator crend() const { return make_reverse_iterator(cbegin()); }
+    const_reverse_iterator crbegin() const { return std::make_reverse_iterator(cend()); }
+    const_reverse_iterator crend() const { return std::make_reverse_iterator(cbegin()); }
 
     // Function for find the elements in the B-Tree
     iterator find(const T& elem);
