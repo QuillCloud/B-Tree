@@ -77,7 +77,6 @@ public:
         root = 0;
         head_ = 0;
     };
-    void debug();
 private:
     // Declare two struct Node and Elem
     struct Node;
@@ -435,8 +434,4 @@ std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_node
     return std::make_pair(resultNode, pre);
 }
 
-template <typename T>
-void btree<T>::debug() {
-    std::cout << Node_Max <<std::endl;
-}
 #endif
