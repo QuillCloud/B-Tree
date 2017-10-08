@@ -16,15 +16,13 @@ template <typename T> class btree {
 public:
     // Friend iterator classes
     friend class btree_Iterator<T>;
-    friend class btree_Reverse_Iterator<T>;
     friend class btree_Const_Iterator<T>;
-    friend class btree_Const_Reverse_Iterator<T>;
 
     // Iterator typedefs
     typedef btree_Iterator<T> iterator;
-    typedef btree_Reverse_Iterator<T> reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef btree_Const_Iterator<T> const_iterator;
-    typedef btree_Reverse_Iterator<T> const_reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
     // Constructs of btree
     // argument 'maxNodeElems' is maximum number of element that can be stored in each B-Tree node
@@ -52,16 +50,16 @@ public:
     const_iterator begin() const { return const_iterator(head_, tail_); }
     const_iterator end() const { return const_iterator(nullptr, tail_); }
     // rbegin()/rend()
-    reverse_iterator rbegin() { return reverse_iterator(tail_, head_); }
-    reverse_iterator rend() { return reverse_iterator(nullptr, head_); }
-    const_reverse_iterator rbegin() const { return const_reverse_iterator(tail_, head_); }
-    const_reverse_iterator rend() const { return const_reverse_iterator(nullptr, head_); }
+    reverse_iterator rbegin() { return std::make_reverse_iterator(end()); }
+    reverse_iterator rend() { return std::make_reverse_iterator(begin()); }
+    reverse_iterator rbegin() const { return std::make_reverse_iterator(end()); }
+    reverse_iterator rend() const { return std::make_reverse_iterator(begin()); }
     // cbegin()/cend()
     const_iterator cbegin() const { return const_iterator(head_, tail_); }
     const_iterator cend() const { return const_iterator(nullptr, tail_); }
     // crbegin()/crend()
-    const_reverse_iterator crbegin() const { return const_reverse_iterator(tail_, head_); }
-    const_reverse_iterator crend() const { return const_reverse_iterator(nullptr, head_); }
+    const_reverse_iterator crbegin() const { return std::make_reverse_iterator(cend()); }
+    const_reverse_iterator crend() const { return std::make_reverse_iterator(cbegin()); }
 
     // Function for find the elements in the B-Tree
     iterator find(const T& elem);
@@ -79,6 +77,7 @@ public:
         root = 0;
         head_ = 0;
     };
+    void debug();
 private:
     // Declare two struct Node and Elem
     struct Node;
@@ -292,7 +291,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
         head_ = newElem;
         tail_ = newElem;
         root->Elems_list.push_back(newElem);
-        return std::make_pair(iterator(head_), true);
+        return std::make_pair(iterator(head_, tail_), true);
     } else {
         // if tree is not empty, start with root node
         auto current_node = root;
@@ -307,7 +306,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                 if (insert_it != current_node->Elems_list.end()) {
                     // if found element is equal to param node, return pair with end() and false
                     if ((*insert_it)->value() == elem) {
-                        return std::make_pair(end(), false);
+                        return std::make_pair(iterator(*insert_it, tail_), false);
                     } else {
                         // if found element is greater than param element
                         // insert the param element before the found element (adjust link state before insert)
@@ -319,7 +318,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                             head_ = newElem;
                         }
                         current_node->Elems_list.insert(insert_it, newElem);
-                        return std::make_pair(iterator(newElem), true);
+                        return std::make_pair(iterator(newElem, tail_), true);
                     }
                 } else {
                     // if cannot find element in node that is equal or greater than insert element
@@ -332,12 +331,11 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                     } else {
                         tail_ = newElem;
                     }
-                    ++insert_it;
-                    current_node->Elems_list.insert(insert_it, newElem);
-                    return std::make_pair(iterator(newElem), true);
+                    current_node->Elems_list.push_back(newElem);
+                    return std::make_pair(iterator(newElem, tail_), true);
                 }
             } else {
-                // if current node is not full
+                // if current node is full
                 // find the first element in node that is equal or greater than insert element
                 auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const Elem *ele) {
                     return (elem <= ele->value());
@@ -345,7 +343,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                 if (insert_it != current_node->Elems_list.end()) {
                     // if found element is equal to param node, return pair with end() and false
                     if ((*insert_it)->value() == elem) {
-                        return std::make_pair(iterator(), false);
+                        return std::make_pair(iterator(*insert_it, tail_), false);
                     } else {
                         // if found element is greater than param element
                         // check if it has a child node, if so, set current node to child node for next loop
@@ -364,7 +362,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                             } else {
                                 head_ = newElem;
                             }
-                            return std::make_pair(iterator(newElem), true);
+                            return std::make_pair(iterator(newElem, tail_), true);
                         }
                     }
                 } else {
@@ -386,7 +384,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         } else {
                             tail_ = newElem;
                         }
-                        return std::make_pair(iterator(newElem), true);
+                        return std::make_pair(iterator(newElem, tail_), true);
                     }
                 }
             }
@@ -437,4 +435,8 @@ std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_node
     return std::make_pair(resultNode, pre);
 }
 
+template <typename T>
+void btree<T>::debug() {
+    std::cout << Node_Max <<std::endl;
+}
 #endif
