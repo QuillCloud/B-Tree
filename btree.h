@@ -46,13 +46,20 @@ public:
     // Puts a breadth-first traversal of the B-Tree onto the output stream os.
     friend std::ostream& operator<< <T> (std::ostream& os, const btree<T>& tree);
 
-    // begin()/end()    rbegin()/rend()    cbegin()/cend()      crbegin()/crend()
-    iterator begin() const { return iterator(head_, tail_); }
-    iterator end() const { return iterator(nullptr, tail_); }
-    reverse_iterator rbegin() const { return reverse_iterator(tail_, head_); }
-    reverse_iterator rend() const { return reverse_iterator(nullptr, head_); }
+    // begin()/end()
+    iterator begin() { return iterator(head_, tail_); }
+    iterator end() { return iterator(nullptr, tail_); }
+    const_iterator begin() const { return const_iterator(head_, tail_); }
+    const_iterator end() const { return const_iterator(nullptr, tail_); }
+    // rbegin()/rend()
+    reverse_iterator rbegin() { return reverse_iterator(tail_, head_); }
+    reverse_iterator rend() { return reverse_iterator(nullptr, head_); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(tail_, head_); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(nullptr, head_); }
+    // cbegin()/cend()
     const_iterator cbegin() const { return const_iterator(head_, tail_); }
     const_iterator cend() const { return const_iterator(nullptr, tail_); }
+    // crbegin()/crend()
     const_reverse_iterator crbegin() const { return const_reverse_iterator(tail_, head_); }
     const_reverse_iterator crend() const { return const_reverse_iterator(nullptr, head_); }
 
