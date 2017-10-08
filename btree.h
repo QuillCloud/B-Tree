@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 #include <deque>
+#include <algorithm>
+#include <iterator>
 #include "btree_iterator.h"
 
 // Declare of output operator <<
