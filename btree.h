@@ -7,7 +7,6 @@
 #include <vector>
 #include <deque>
 #include <algorithm>
-#include <iterator>
 #include "btree_iterator.h"
 
 // Declare of output operator <<
@@ -52,16 +51,16 @@ public:
     const_iterator begin() const { return const_iterator(head_, tail_); }
     const_iterator end() const { return const_iterator(nullptr, tail_); }
     // rbegin()/rend()
-    reverse_iterator rbegin() { return std::make_reverse_iterator(end()); }
-    reverse_iterator rend() { return std::make_reverse_iterator(begin()); }
-    reverse_iterator rbegin() const { return std::make_reverse_iterator(end()); }
-    reverse_iterator rend() const { return std::make_reverse_iterator(begin()); }
+    reverse_iterator rbegin() { return make_reverse_iterator(end()); }
+    reverse_iterator rend() { return make_reverse_iterator(begin()); }
+    reverse_iterator rbegin() const { return make_reverse_iterator(end()); }
+    reverse_iterator rend() const { return make_reverse_iterator(begin()); }
     // cbegin()/cend()
     const_iterator cbegin() const { return const_iterator(head_, tail_); }
     const_iterator cend() const { return const_iterator(nullptr, tail_); }
     // crbegin()/crend()
-    const_reverse_iterator crbegin() const { return std::make_reverse_iterator(cend()); }
-    const_reverse_iterator crend() const { return std::make_reverse_iterator(cbegin()); }
+    const_reverse_iterator crbegin() const { return make_reverse_iterator(cend()); }
+    const_reverse_iterator crend() const { return make_reverse_iterator(cbegin()); }
 
     // Function for find the elements in the B-Tree
     iterator find(const T& elem);
@@ -81,7 +80,7 @@ private:
     // Declare two struct Node and Elem
     struct Node;
     struct Elem;
-    
+
     // Private function that make copy of Node.
     // @Param: nd is the copy target node, pre is the parent element of this node (for root is nullptr)
     // @Return: return a pair, first is copied node, second is tail of tree(including copied node and its child node)
@@ -94,6 +93,10 @@ private:
         ~Node() {
             delete child_;
             child_ = 0;
+            for ( auto i = Elems_list.begin(); i != Elems_list.end(); ++i) {
+                delete *i;
+                *i = 0;
+            }
         }
         // get size of Node
         size_t size() { return Elems_list.size(); }
@@ -109,10 +112,7 @@ private:
         // constructor and destructor
         Elem(const T& t, Elem *pre, Elem *next) : elem_(t), pre_(pre), next_(next), child_(nullptr) {}
         ~Elem() {
-            delete next_;
             delete child_;
-            next_ = 0;
-            child_ = 0;
         }
         // get value of element
         const T& value() const { return elem_; }
