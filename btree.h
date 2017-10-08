@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <deque>
+#include <memory>
 #include "btree_iterator.h"
 
 // Declare of output operator <<
@@ -26,7 +27,7 @@ public:
 
     // Constructs of btree
     // argument 'maxNodeElems' is maximum number of element that can be stored in each B-Tree node
-    btree(size_t maxNodeElems = 40) : Node_Max(maxNodeElems), root(new Node()), head_(nullptr), tail_(nullptr) {}
+    btree(size_t maxNodeElems = 40) : Node_Max(maxNodeElems), root(std::make_shared<Node>(Node())), head_(nullptr), tail_(nullptr) {}
 
     // Copy constructor
     btree(const btree<T>& original);
@@ -47,8 +48,8 @@ public:
     // begin()/end()
     iterator begin() { return iterator(head_, tail_); }
     iterator end() { return iterator(nullptr, tail_); }
-    const_iterator begin() const { return const_iterator(head_, tail_); }
-    const_iterator end() const { return const_iterator(nullptr, tail_); }
+    //const_iterator begin() const { return const_iterator(head_, tail_); }
+    //const_iterator end() const { return const_iterator(nullptr, tail_); }
     // rbegin()/rend()
     reverse_iterator rbegin() { return std::make_reverse_iterator(end()); }
     reverse_iterator rend() { return std::make_reverse_iterator(begin()); }
@@ -71,13 +72,7 @@ public:
     std::pair<iterator, bool> insert(const T& elem);
 
     // Destructor part
-    ~btree() {
-        delete root;
-        delete head_;
-        root = 0;
-        head_ = 0;
-    };
-    void debug();
+    ~btree() {};
 private:
     // Declare two struct Node and Elem
     struct Node;
@@ -86,57 +81,50 @@ private:
     // Private function that make copy of Node.
     // @Param: nd is the copy target node, pre is the parent element of this node (for root is nullptr)
     // @Return: return a pair, first is copied node, second is tail of tree(including copied node and its child node)
-    std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> copy_node(const Node* nd, Elem* pre);
+    std::pair<std::shared_ptr<typename btree<T>::Node>,std::shared_ptr<typename btree<T>::Elem>> copy_node(
+            const std::shared_ptr<typename btree<T>::Node> nd, std::shared_ptr<typename btree<T>::Elem> pre);
 
     // struct Node, represent the Nodes in B-Tree
     struct Node {
         // constructor and destructor
         Node() : child_(nullptr) {}
-        ~Node() {
-            delete child_;
-            child_ = 0;
-        }
+        ~Node() {}
         // get size of Node
         size_t size() { return Elems_list.size(); }
         // set the pointer child_ point to Node's last child
-        void setChild(Node *nd) { child_ = nd; }
+        void setChild(std::shared_ptr<Node> nd) { child_ = nd; }
         // Elems_list store the pointers point to elements in Node
-        std::vector<Elem*> Elems_list;
+        std::vector<std::shared_ptr<Elem>> Elems_list;
         // a pointer point to the Node's last child
-        Node *child_;
+        std::shared_ptr<Node> child_;
     };
     // struct Elem, represent the Elements in B-Tree
     struct Elem {
         // constructor and destructor
-        Elem(const T& t, Elem *pre, Elem *next) : elem_(t), pre_(pre), next_(next), child_(nullptr) {}
-        ~Elem() {
-            delete next_;
-            delete child_;
-            next_ = 0;
-            child_ = 0;
-        }
+        Elem(const T& t) : elem_(t), pre_(nullptr), next_(nullptr), child_(nullptr) {}
+        ~Elem() {}
         // get value of element
         const T& value() const { return elem_; }
         // set pointer 'pre_' to previous element
-        void setPre(Elem *ele) { pre_ = ele; }
+        void setPre(std::shared_ptr<Elem> ele) { pre_ = ele; }
         // set pointer 'next_' to next element
-        void setNext(Elem *ele) { next_ = ele; }
+        void setNext(std::shared_ptr<Elem> ele) { next_ = ele; }
         // set pointer 'child_' point to child of Node in the location of this element
-        void setChild(Node *nd) { child_ = nd; }
+        void setChild(std::shared_ptr<Node> nd) { child_ = nd; }
 
         // 'elem_' store the value of element
         T elem_;
         // pointers point to previous and next elements
-        Elem *pre_, *next_;
+        std::shared_ptr<Elem> pre_, next_;
         // pointer point to the child of Node in the location of this element
-        Node *child_;
+        std::shared_ptr<Node> child_;
     };
     // maximum number of element that can be stored in each B-Tree node
     size_t Node_Max;
     // pointer point to the root node of B-Tree
-    Node *root;
+    std::shared_ptr<Node> root;
     // pointers point to the head and tail elements
-    Elem *head_, *tail_;
+    std::shared_ptr<Elem> head_, tail_;
 };
 
 // Copy constructor
@@ -158,17 +146,12 @@ btree<T>::btree(btree<T>&& original) {
     tail_ = std::move(original.tail_);
     // set original to empty
     original.Node_Max = 0;
-    original.root = new Node();
-    original.head_ = nullptr;
-    original.tail_ = nullptr;
+    original.root = std::make_shared<Node>(Node());
 }
 
 template <typename T>
 btree<T>& btree<T>::operator=(const btree<T>& rhs) {
     if (this != &rhs) {
-        // delete 'root' and 'head_' to avoid memory leak
-        delete root;
-        delete head_;
         // use function copy_node to get copy of original's root
         auto copy = copy_node(rhs.root, nullptr);
         Node_Max = rhs.Node_Max;
@@ -181,9 +164,6 @@ btree<T>& btree<T>::operator=(const btree<T>& rhs) {
 template <typename T>
 btree<T>& btree<T>::operator=(btree<T>&& rhs) {
     if (this != &rhs) {
-        // delete 'root' and 'head_' to avoid memory leak
-        delete root;
-        delete head_;
         Node_Max = std::move(rhs.Node_Max);
         root = std::move(rhs.root);
         head_ = std::move(rhs.head_);
@@ -191,8 +171,6 @@ btree<T>& btree<T>::operator=(btree<T>&& rhs) {
         // set original to empty
         rhs.Node_Max = 0;
         rhs.root = new Node();
-        rhs.head_ = nullptr;
-        rhs.tail_ = nullptr;
     }
     return *this;
 }
@@ -200,7 +178,7 @@ btree<T>& btree<T>::operator=(btree<T>&& rhs) {
 template <typename T>
 std::ostream& operator<<(std::ostream &os, const btree<T> &tree) {
     // use a deque to store each nodes, start from root
-    std::deque<typename btree<T>::Node*> node_list;
+    std::deque<std::shared_ptr<typename btree<T>::Node>> node_list;
     node_list.push_back(tree.root);
     while (!node_list.empty()) {
         // get first node in deque
@@ -220,7 +198,7 @@ std::ostream& operator<<(std::ostream &os, const btree<T> &tree) {
     os << '\b';
     return os;
 }
-
+/*
 template <typename T>
 typename btree<T>::iterator btree<T>::find(const T &elem) {
     // start with root
@@ -282,12 +260,12 @@ typename btree<T>::const_iterator btree<T>::find(const T& elem) const {
         }
     } while (1);
 }
-
+*/
 template <typename T>
 std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
     // if the tree is empty, set head_ and add param element to the root node
     if (!head_) {
-        Elem *newElem = new Elem(elem, nullptr, nullptr);
+        auto newElem = std::make_shared<Elem>(Elem(elem));
         head_ = newElem;
         tail_ = newElem;
         root->Elems_list.push_back(newElem);
@@ -300,7 +278,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
             if (current_node->size() < Node_Max) {
                 // if current node is not full
                 // find the first element in node that is equal or greater than param element
-                auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const Elem *ele) {
+                auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const std::shared_ptr<Elem> ele) {
                     return (elem <= ele->value());
                 });
                 if (insert_it != current_node->Elems_list.end()) {
@@ -310,21 +288,25 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                     } else {
                         // if found element is greater than param element
                         // insert the param element before the found element (adjust link state before insert)
-                        Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
+                        auto newElem = std::make_shared<Elem>(Elem(elem));
+                        newElem->setPre((*insert_it)->pre_);
+                        newElem->setNext(*insert_it);
                         (*insert_it)->setPre(newElem);
                         if (newElem->pre_ != nullptr) {
                             newElem->pre_->setNext(newElem);
                         } else {
                             head_ = newElem;
                         }
-                        current_node->Elems_list.insert(insert_it, newElem);
-                        return std::make_pair(iterator(newElem, tail_), true);
+                        current_node->Elems_list.insert(insert_it, std::move(newElem));
+                        return std::make_pair(iterator(*insert_it, tail_), true);
                     }
                 } else {
                     // if cannot find element in node that is equal or greater than insert element
                     // insert the param element at end of current node (adjust link state before insert)
                     --insert_it;
-                    Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
+                    auto newElem = std::make_shared<Elem>(Elem(elem));
+                    newElem->setPre(*insert_it);
+                    newElem->setNext((*insert_it)->next_);
                     (*insert_it)->setNext(newElem);
                     if (newElem->next_ != nullptr) {
                         newElem->next_->setPre(newElem);
@@ -332,12 +314,12 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         tail_ = newElem;
                     }
                     current_node->Elems_list.push_back(newElem);
-                    return std::make_pair(iterator(newElem, tail_), true);
+                    return std::make_pair(iterator(*insert_it, tail_), true);
                 }
             } else {
                 // if current node is full
                 // find the first element in node that is equal or greater than insert element
-                auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const Elem *ele) {
+                auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const std::shared_ptr<Elem> ele) {
                     return (elem <= ele->value());
                 });
                 if (insert_it != current_node->Elems_list.end()) {
@@ -352,8 +334,10 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         } else {
                             // if has no child node, create a child node and insert the param element
                             // (adjust link state before insert)
-                            Node *newNode = new Node();
-                            Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
+                            auto newNode = std::make_shared<Node>(Node());
+                            auto newElem = std::make_shared<Elem>(Elem(elem));
+                            newElem->setPre((*insert_it)->pre_);
+                            newElem->setNext(*insert_it);
                             (*insert_it)->setChild(newNode);
                             (*insert_it)->setPre(newElem);
                             newNode->Elems_list.push_back(newElem);
@@ -362,7 +346,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                             } else {
                                 head_ = newElem;
                             }
-                            return std::make_pair(iterator(newElem, tail_), true);
+                            return std::make_pair(iterator(*insert_it, tail_), true);
                         }
                     }
                 } else {
@@ -374,8 +358,10 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         // if no last child node, create a child node for current node
                         // then insert param element to child node (adjust link state before insert)
                         --insert_it;
-                        Node *newNode = new Node();
-                        Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
+                        auto newNode = std::make_shared<Node>(Node());
+                        auto newElem = std::make_shared<Elem>(Elem(elem));
+                        newElem->setPre(*insert_it);
+                        newElem->setNext((*insert_it)->next_);
                         newNode->Elems_list.push_back(newElem);
                         current_node->setChild(newNode);
                         (*insert_it)->setNext(newElem);
@@ -384,7 +370,7 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
                         } else {
                             tail_ = newElem;
                         }
-                        return std::make_pair(iterator(newElem, tail_), true);
+                        return std::make_pair(iterator(*insert_it, tail_), true);
                     }
                 }
             }
@@ -395,13 +381,14 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
 // A recursion function for copy the node
 // In this class used for copy root node, so usually start with the root node and nullptr
 template <typename T>
-std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_node(const Node* nd, Elem* pre) {
+std::pair<std::shared_ptr<typename btree<T>::Node>,std::shared_ptr<typename btree<T>::Elem>> btree<T>::copy_node(
+        const std::shared_ptr<typename btree<T>::Node> nd, std::shared_ptr<typename btree<T>::Elem> pre) {
     // create Node 'resultNode' which is first element of return pair
-    Node *resultNode = new Node();
+    auto resultNode = std::make_shared<Node>(Node());
     // go through each element in param node
     for (auto i : nd->Elems_list) {
         // create new Elem which has same value of original node
-        Elem *copy_i = new Elem(i->value(), nullptr, nullptr);
+        auto copy_i = std::make_shared<Elem>(Elem(i->value()));
         if (i->child_ != nullptr) {
             // if original node has a child
             // use 'copy_node' function to get copy of child node
@@ -435,8 +422,4 @@ std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_node
     return std::make_pair(resultNode, pre);
 }
 
-template <typename T>
-void btree<T>::debug() {
-    std::cout << Node_Max <<std::endl;
-}
 #endif

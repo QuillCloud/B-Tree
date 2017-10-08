@@ -19,8 +19,11 @@ public:
 
     // constructor
     // param including 'tail', if do decrement operator with end(), then iterator point to 'tail'
-    btree_Iterator(typename btree<T>::Elem *pointee = nullptr, typename btree<T>::Elem *tail = nullptr)
-            : pointee_(pointee), tail_(tail) {}
+    btree_Iterator(std::shared_ptr<typename btree<T>::Elem> pointee = nullptr,
+                   std::shared_ptr<typename btree<T>::Elem> tail = nullptr) {
+        pointee_ = pointee;
+        tail_ = tail;
+    }
     reference operator*() const;
     pointer operator->() const;
     btree_Iterator<T>& operator++();
@@ -29,12 +32,14 @@ public:
     btree_Iterator<T> operator--(int);
     bool operator==(const btree_Iterator<T>& other) const;
     bool operator!=(const btree_Iterator<T>& other) const { return !operator==(other); }
+    /*
     operator btree_Const_Iterator<T>() {
         return btree_Const_Iterator<T>{pointee_};
     }
+     */
 private:
-    mutable typename btree<T>::Elem *pointee_;
-    typename btree<T>::Elem *tail_;
+    mutable std::shared_ptr<typename btree<T>::Elem> pointee_;
+    std::shared_ptr<typename btree<T>::Elem> tail_;
 };
 
 // const_iterator, similar to 'iterator'
@@ -46,8 +51,11 @@ public:
     typedef const T*                           pointer;
     typedef const T&                           reference;
 
-    btree_Const_Iterator(typename btree<T>::Elem *pointee = nullptr, typename btree<T>::Elem *tail = nullptr)
-            : pointee_(pointee), tail_(tail) {}
+    btree_Const_Iterator(std::shared_ptr<typename btree<T>::Elem> pointee = nullptr,
+                          std::shared_ptr<typename btree<T>::Elem> tail = nullptr) {
+        pointee_ = pointee;
+        tail_ = tail;
+    }
     reference operator*() const;
     pointer operator->() const;
     btree_Const_Iterator<T>& operator++();
@@ -57,8 +65,8 @@ public:
     bool operator==(const btree_Const_Iterator<T>& other) const;
     bool operator!=(const btree_Const_Iterator<T>& other) const { return !operator==(other); }
 private:
-    mutable typename btree<T>::Elem *pointee_;
-    typename btree<T>::Elem *tail_;
+    mutable std::shared_ptr<typename btree<T>::Elem> pointee_;
+    std::shared_ptr<typename btree<T>::Elem> tail_;
 };
 
 template <typename T> typename btree_Iterator<T>::reference
