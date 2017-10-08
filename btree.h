@@ -18,13 +18,15 @@ template <typename T> class btree {
 public:
     // Friend iterator classes
     friend class btree_Iterator<T>;
+    friend class btree_Reverse_Iterator<T>;
     friend class btree_Const_Iterator<T>;
+    friend class btree_Const_Reverse_Iterator<T>;
 
     // Iterator typedefs
     typedef btree_Iterator<T> iterator;
-    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef btree_Reverse_Iterator<T> reverse_iterator;
     typedef btree_Const_Iterator<T> const_iterator;
-    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef btree_Const_Reverse_Iterator<T> const_reverse_iterator;
 
     // Constructs of btree
     // argument 'maxNodeElems' is maximum number of element that can be stored in each B-Tree node
@@ -52,16 +54,16 @@ public:
     const_iterator begin() const { return const_iterator(head_, tail_); }
     const_iterator end() const { return const_iterator(nullptr, tail_); }
     // rbegin()/rend()
-    reverse_iterator rbegin() { return std::make_reverse_iterator(end()); }
-    reverse_iterator rend() { return std::make_reverse_iterator(begin()); }
-    reverse_iterator rbegin() const { return std::make_reverse_iterator(end()); }
-    reverse_iterator rend() const { return std::make_reverse_iterator(begin()); }
+    reverse_iterator rbegin() { return reverse_iterator(tail_, head_); }
+    reverse_iterator rend() { return reverse_iterator(nullptr, head_); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(tail_, head_); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(nullptr, head_); }
     // cbegin()/cend()
     const_iterator cbegin() const { return const_iterator(head_, tail_); }
     const_iterator cend() const { return const_iterator(nullptr, tail_); }
     // crbegin()/crend()
-    const_reverse_iterator crbegin() const { return std::make_reverse_iterator(cend()); }
-    const_reverse_iterator crend() const { return std::make_reverse_iterator(cbegin()); }
+    const_reverse_iterator crbegin() const { return const_reverse_iterator(tail_, head_); }
+    const_reverse_iterator crend() const { return const_reverse_iterator(nullptr, head_); }
 
     // Function for find the elements in the B-Tree
     iterator find(const T& elem);
