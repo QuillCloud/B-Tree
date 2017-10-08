@@ -73,9 +73,7 @@ public:
     // Destructor part
     ~btree() {
         delete root;
-        delete head_;
         root = 0;
-        head_ = 0;
     };
 private:
     // Declare two struct Node and Elem
@@ -117,7 +115,7 @@ private:
         // get value of element
         const T& value() const { return elem_; }
         // set pointer 'pre_' to previous element
-        void setPre(Elem *ele) { pre_ = ele; }
+        void setPre(Elem *ele) { pre_ = ele;}
         // set pointer 'next_' to next element
         void setNext(Elem *ele) { next_ = ele; }
         // set pointer 'child_' point to child of Node in the location of this element
