@@ -28,7 +28,7 @@ using std::ifstream;
 using std::ofstream;
 using std::set;
 using std::string;
-
+using std::pair;
 namespace {
 
 const long kMinInteger = 1000000;
