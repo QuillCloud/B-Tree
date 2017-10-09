@@ -449,8 +449,6 @@ void btree<T>::destructor_helper(Node*& nd) {
         } else {
             delete i;
             i = 0;
-            delete i->child_;
-            i->child_ = 0;
         }
     }
     // check if param node has last child node, if so, get copy of it and update 'resultNode'
