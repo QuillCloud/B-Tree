@@ -446,6 +446,8 @@ void btree<T>::destructor_helper(Node*& nd) {
         // create new Elem which has same value of original node
         if (i->child_ != nullptr) {
             destructor_helper(i->child_);
+            delete i;
+            i = 0;
         } else {
             delete i;
             i = 0;
