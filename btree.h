@@ -76,8 +76,7 @@ public:
 
     // Destructor part
     ~btree() {
-        delete root;
-        root = 0;
+        destructor_helper(root);
     };
 private:
     // Declare two struct Node and Elem
@@ -88,18 +87,20 @@ private:
     // @Param: nd is the copy target node, pre is the parent element of this node (for root is nullptr)
     // @Return: return a pair, first is copied node, second is tail of tree(including copied node and its child node)
     std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> copy_node(const Node* nd, Elem* pre);
-
+    void destructor_helper(Node* nd);
     // struct Node, represent the Nodes in B-Tree
     struct Node {
         // constructor and destructor
         Node() : child_(nullptr) {}
         ~Node() {
+            /*
             delete child_;
             child_ = 0;
             for ( auto i = Elems_list.begin(); i != Elems_list.end(); ++i) {
                 delete *i;
                 *i = 0;
             }
+             */
         }
         // get size of Node
         size_t size() { return Elems_list.size(); }
@@ -115,7 +116,7 @@ private:
         // constructor and destructor
         Elem(const T& t, Elem *pre, Elem *next) : elem_(t), pre_(pre), next_(next), child_(nullptr) {}
         ~Elem() {
-            delete child_;
+            //delete child_;
         }
         // get value of element
         const T& value() const { return elem_; }
@@ -435,6 +436,27 @@ std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_node
     // return the pair, first is copied node 'resultNode'
     // second is 'pre', which is the tail element for tree(including 'resultNode' and its child node)
     return std::make_pair(resultNode, pre);
+}
+
+template <typename T>
+void btree<T>::destructor_helper(Node* nd) {
+    // create Node 'resultNode' which is first element of return pair
+    // go through each element in param node
+    for (Elem* i : nd->Elems_list) {
+        // create new Elem which has same value of original node
+        if (i->child_ != nullptr) {
+            destructor_helper(i->child_);
+        } else {
+            delete i;
+            i = 0;
+        }
+    }
+    // check if param node has last child node, if so, get copy of it and update 'resultNode'
+    if (nd->child_ != nullptr) {
+        destructor_helper(nd->child_);
+    }
+    delete nd;
+    nd = 0;
 }
 
 #endif
