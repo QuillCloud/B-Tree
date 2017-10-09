@@ -91,8 +91,13 @@ private:
     // Private function that free the Node
     // @Param: nd is the Node that will be free.(if nd is root, whole B-Tree will be freed)
     void destructor_helper(Node*& nd);
+    // Private function that find the element location in the node(use binary search)
+    // @Param: nd is the Node for search, ele is the element value
+    // @Return: a pair, fist is element location in Node(iterator), second bool(true if find)
+    std::pair<typename std::vector<typename btree<T>::Elem*>::iterator, bool> find_ele_location(Node* nd, const T& elem) const;
     // struct Node, represent the Nodes in B-Tree
     struct Node {
+
         // constructor and destructor
         Node() : child_(nullptr) {}
         ~Node() {}
@@ -219,30 +224,30 @@ typename btree<T>::iterator btree<T>::find(const T &elem) {
     // start with root
     auto current_node = root;
     do {
-        // find first element that equal or greater than target element
-        auto find_ele = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const auto& ele) {
-            return (elem <= ele->value());
-        });
-        if (find_ele != current_node->Elems_list.end()) {
-            // if the found element that is equal to target element, return that element's iterator
-            if ((*find_ele)->value() == elem) {
-                return iterator((*find_ele));
-            } else {
-                // if the found element is greater than target element
-                // if it has a child node, set current node to child node for next loop, if not, return end()
-                if ((*find_ele)->child_ != nullptr) {
-                    current_node = (*find_ele)->child_;
+        // use binary research to find the proper location of element in current node
+        auto pair = find_ele_location(current_node, elem);
+        auto it = pair.first;
+        // if the element in that location, return the iterator of that element
+        if (pair.second == true) {
+            return iterator(*(it));
+        } else {
+            // if the element is not in that location, check if that location has a child node
+            // if has a child, change current node to that child node for next loop
+            // if not, means element not in the tree, return end()
+            if ((*it)->value() < elem)
+                ++it;
+            if (it != current_node->Elems_list.end()) {
+                if ((*it)->child_ != nullptr) {
+                    current_node = (*it)->child_;
                 } else {
                     return end();
                 }
-            }
-        } else {
-            // cannot find the element that equal or greater than target element
-            // check if last child node exists, set current node to child node for next loop, if not return end()
-            if (current_node->child_ != nullptr) {
-                current_node = current_node->child_;
             } else {
-                return end();
+                if (current_node->child_ != nullptr) {
+                    current_node = current_node->child_;
+                } else {
+                    return end();
+                }
             }
         }
     } while (1);
@@ -253,24 +258,25 @@ typename btree<T>::const_iterator btree<T>::find(const T& elem) const {
     // function body is quite similar to non-const 'find', but return type is const_iterator
     auto current_node = root;
     do {
-        auto find_ele = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const auto& ele) {
-            return (elem <= ele->value());
-        });
-        if (find_ele != current_node->Elems_list.end()) {
-            if ((*find_ele)->value() == elem) {
-                return const_iterator((*find_ele));
-            } else {
-                if ((*find_ele)->child_ != nullptr) {
-                    current_node = (*find_ele)->child_;
+        auto pair = find_ele_location(current_node, elem);
+        auto it = pair.first;
+        if (pair.second == true) {
+            return const_iterator(*(it));
+        } else {
+            if ((*it)->value() < elem)
+                ++it;
+            if (it != current_node->Elems_list.end()) {
+                if ((*it)->child_ != nullptr) {
+                    current_node = (*it)->child_;
                 } else {
                     return cend();
                 }
-            }
-        } else {
-            if (current_node->child_ != nullptr) {
-                current_node = current_node->child_;
             } else {
-                return cend();
+                if (current_node->child_ != nullptr) {
+                    current_node = current_node->child_;
+                } else {
+                    return cend();
+                }
             }
         }
     } while (1);
@@ -285,104 +291,92 @@ std::pair<typename btree<T>::iterator, bool> btree<T>::insert(const T &elem) {
         tail_ = newElem;
         root->Elems_list.push_back(newElem);
         return std::make_pair(iterator(head_, tail_), true);
-    } else {
-        // if tree is not empty, start with root node
-        auto current_node = root;
-        do {
-            // check if the current node is full
-            if (current_node->size() < Node_Max) {
-                // if current node is not full
-                // find the first element in node that is equal or greater than param element
-                auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const Elem *ele) {
-                    return (elem <= ele->value());
-                });
-                if (insert_it != current_node->Elems_list.end()) {
-                    // if found element is equal to param node, return pair with end() and false
-                    if ((*insert_it)->value() == elem) {
-                        return std::make_pair(iterator(*insert_it, tail_), false);
-                    } else {
-                        // if found element is greater than param element
-                        // insert the param element before the found element (adjust link state before insert)
-                        Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
-                        (*insert_it)->setPre(newElem);
-                        if (newElem->pre_ != nullptr) {
-                            newElem->pre_->setNext(newElem);
-                        } else {
-                            head_ = newElem;
-                        }
-                        current_node->Elems_list.insert(insert_it, newElem);
-                        return std::make_pair(iterator(newElem, tail_), true);
-                    }
+    }
+    // if tree is not empty, start with root node
+    auto current_node = root;
+    do {
+        // find the proper location in current node (use binary search function 'find_ele_location')
+        auto pair = find_ele_location(current_node, elem);
+        auto insert_it = pair.first;
+        // if element already in that location, cannot insert return pair(itearator, false)
+        if (pair.second == true)
+            return std::make_pair(iterator(*insert_it, tail_), false);
+        if ((*insert_it)->value() < elem)
+            ++insert_it;
+        // if current node is not full, insert element into current node
+        if (current_node->size() < Node_Max) {
+            // if location is not at end of Node
+            if (insert_it != current_node->Elems_list.end()) {
+                // insert the param element before the found element (adjust link state before insert)
+                Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
+                (*insert_it)->setPre(newElem);
+                if (newElem->pre_ != nullptr) {
+                    newElem->pre_->setNext(newElem);
                 } else {
-                    // if cannot find element in node that is equal or greater than insert element
-                    // insert the param element at end of current node (adjust link state before insert)
-                    --insert_it;
-                    Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
-                    (*insert_it)->setNext(newElem);
-                    if (newElem->next_ != nullptr) {
-                        newElem->next_->setPre(newElem);
+                    head_ = newElem;
+                }
+                current_node->Elems_list.insert(insert_it, newElem);
+                return std::make_pair(iterator(newElem, tail_), true);
+            } else {
+                // if location is at end of Node
+                // insert the param element at end of current node (adjust link state before insert)
+                --insert_it;
+                Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
+                (*insert_it)->setNext(newElem);
+                if (newElem->next_ != nullptr) {
+                    newElem->next_->setPre(newElem);
+                } else {
+                    tail_ = newElem;
+                }
+                current_node->Elems_list.push_back(newElem);
+                return std::make_pair(iterator(newElem, tail_), true);
+            }
+        } else {
+            // if current node is full, need insert into sub-tree of this location
+            // if location is not at end of Node
+            if (insert_it != current_node->Elems_list.end()) {
+                // check if has a child node, if so, set current node to child node for next loop
+                if ((*insert_it)->child_ != nullptr) {
+                    current_node = (*insert_it)->child_;
+                } else {
+                    // if has no child node, create a child node and insert the param element
+                    // (adjust link state before insert)
+                    Node *newNode = new Node();
+                    Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
+                    (*insert_it)->setChild(newNode);
+                    (*insert_it)->setPre(newElem);
+                    newNode->Elems_list.push_back(newElem);
+                    if (newElem->pre_ != nullptr) {
+                        (newElem->pre_)->setNext(newElem);
                     } else {
-                        tail_ = newElem;
+                        head_ = newElem;
                     }
-                    current_node->Elems_list.push_back(newElem);
                     return std::make_pair(iterator(newElem, tail_), true);
                 }
             } else {
-                // if current node is full
-                // find the first element in node that is equal or greater than insert element
-                auto insert_it = std::find_if(current_node->Elems_list.begin(), current_node->Elems_list.end(), [&elem] (const Elem *ele) {
-                    return (elem <= ele->value());
-                });
-                if (insert_it != current_node->Elems_list.end()) {
-                    // if found element is equal to param node, return pair with end() and false
-                    if ((*insert_it)->value() == elem) {
-                        return std::make_pair(iterator(*insert_it, tail_), false);
-                    } else {
-                        // if found element is greater than param element
-                        // check if it has a child node, if so, set current node to child node for next loop
-                        if ((*insert_it)->child_ != nullptr) {
-                            current_node = (*insert_it)->child_;
-                        } else {
-                            // if has no child node, create a child node and insert the param element
-                            // (adjust link state before insert)
-                            Node *newNode = new Node();
-                            Elem *newElem = new Elem(elem, (*insert_it)->pre_, *insert_it);
-                            (*insert_it)->setChild(newNode);
-                            (*insert_it)->setPre(newElem);
-                            newNode->Elems_list.push_back(newElem);
-                            if (newElem->pre_ != nullptr) {
-                                (newElem->pre_)->setNext(newElem);
-                            } else {
-                                head_ = newElem;
-                            }
-                            return std::make_pair(iterator(newElem, tail_), true);
-                        }
-                    }
+                // if location is at end of Node
+                // check if last child node exists, if so, set current node to last child node for next loop
+                if (current_node->child_ != nullptr) {
+                    current_node = current_node->child_;
                 } else {
-                    // if cannot find element in node that is equal or greater than insert element
-                    // check if last child node exists, if so, set current node to last child node for next loop
-                    if (current_node->child_ != nullptr) {
-                        current_node = current_node->child_;
+                    // if no last child node, create a child node for current node
+                    // then insert param element to child node (adjust link state before insert)
+                    --insert_it;
+                    Node *newNode = new Node();
+                    Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
+                    newNode->Elems_list.push_back(newElem);
+                    current_node->setChild(newNode);
+                    (*insert_it)->setNext(newElem);
+                    if (newElem->next_ != nullptr) {
+                        (newElem->next_)->setPre(newElem);
                     } else {
-                        // if no last child node, create a child node for current node
-                        // then insert param element to child node (adjust link state before insert)
-                        --insert_it;
-                        Node *newNode = new Node();
-                        Elem *newElem = new Elem(elem, *insert_it, (*insert_it)->next_);
-                        newNode->Elems_list.push_back(newElem);
-                        current_node->setChild(newNode);
-                        (*insert_it)->setNext(newElem);
-                        if (newElem->next_ != nullptr) {
-                            (newElem->next_)->setPre(newElem);
-                        } else {
-                            tail_ = newElem;
-                        }
-                        return std::make_pair(iterator(newElem, tail_), true);
+                        tail_ = newElem;
                     }
+                    return std::make_pair(iterator(newElem, tail_), true);
                 }
             }
-        } while (1);
-    }
+        }
+    } while (1);
 }
 
 // A recursion function for copy the node
@@ -448,5 +442,25 @@ void btree<T>::destructor_helper(Node*& nd) {
     delete nd;
     nd = 0;
 }
+
+// use binary search to find the element location in the node
+template <typename T>
+std::pair<typename std::vector<typename btree<T>::Elem*>::iterator, bool>  btree<T>::find_ele_location(Node* nd, const T& elem) const {
+    int lower(0), upper(nd->Elems_list.size() - 1), current((lower + upper) / 2);
+    bool find_flag = false;
+    while (lower <= upper) {
+        if (elem < nd->Elems_list[current]->value()) {
+            upper = current - 1;
+        } else if (elem > nd->Elems_list[current]->value()) {
+            lower = current + 1;
+        } else {
+            find_flag = true;
+            break;
+        }
+        current = (lower + upper) / 2;
+    }
+    return std::make_pair(nd->Elems_list.begin() + current, find_flag);
+}
+
 
 #endif
