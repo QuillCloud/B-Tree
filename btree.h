@@ -87,7 +87,7 @@ private:
     // @Param: nd is the copy target node, pre is the parent element of this node (for root is nullptr)
     // @Return: return a pair, first is copied node, second is tail of tree(including copied node and its child node)
     std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> copy_node(const Node* nd, Elem* pre);
-    void destructor_helper(Node* nd);
+    void destructor_helper(Node*& nd);
     // struct Node, represent the Nodes in B-Tree
     struct Node {
         // constructor and destructor
@@ -439,10 +439,10 @@ std::pair<typename btree<T>::Node*,typename btree<T>::Elem*> btree<T>::copy_node
 }
 
 template <typename T>
-void btree<T>::destructor_helper(Node* nd) {
+void btree<T>::destructor_helper(Node*& nd) {
     // create Node 'resultNode' which is first element of return pair
     // go through each element in param node
-    for (Elem* i : nd->Elems_list) {
+    for (auto& i : nd->Elems_list) {
         // create new Elem which has same value of original node
         if (i->child_ != nullptr) {
             destructor_helper(i->child_);
