@@ -6,6 +6,8 @@
 #include "btree.h"
 
 template <typename T> class btree;
+template <typename T> class btree_Iterator;
+template <typename T> class btree_Reverse_Iterator;
 template <typename T> class btree_Const_Iterator;
 template <typename T> class btree_Const_Reverse_Iterator;
 // iterator
@@ -28,7 +30,9 @@ public:
     btree_Iterator<T> operator++(int);
     btree_Iterator<T> operator--(int);
     bool operator==(const btree_Iterator<T>& other) const;
+    bool operator==(const btree_Const_Iterator<T>& other) const;
     bool operator!=(const btree_Iterator<T>& other) const { return !operator==(other); }
+    bool operator!=(const btree_Const_Iterator<T>& other) const { return !operator==(other); }
     operator btree_Const_Iterator<T>() {
         return btree_Const_Iterator<T>{pointee_};
     }
@@ -57,7 +61,12 @@ public:
     btree_Reverse_Iterator<T> operator++(int);
     btree_Reverse_Iterator<T> operator--(int);
     bool operator==(const btree_Reverse_Iterator<T>& other) const;
+    bool operator==(const btree_Const_Reverse_Iterator<T>& other) const;
     bool operator!=(const btree_Reverse_Iterator<T>& other) const { return !operator==(other); }
+    bool operator!=(const btree_Const_Reverse_Iterator<T>& other) const { return !operator==(other); }
+    operator btree_Const_Reverse_Iterator<T>() {
+        return btree_Const_Reverse_Iterator<T>{pointee_};
+    }
 private:
     mutable typename btree<T>::Elem *pointee_;
     typename btree<T>::Elem *head_;
@@ -66,6 +75,7 @@ private:
 // const_iterator, similar to 'iterator'
 template <typename T> class btree_Const_Iterator {
 public:
+    friend class btree_Iterator<T>;
     typedef std::ptrdiff_t                     difference_type;
     typedef std::forward_iterator_tag          iterator_category;
     typedef T                                  value_type;
@@ -82,9 +92,6 @@ public:
     btree_Const_Iterator<T> operator--(int);
     bool operator==(const btree_Const_Iterator<T>& other) const;
     bool operator!=(const btree_Const_Iterator<T>& other) const { return !operator==(other); }
-    operator btree_Const_Reverse_Iterator<T>() {
-        return btree_Const_Reverse_Iterator<T>{pointee_};
-    }
 private:
     mutable typename btree<T>::Elem *pointee_;
     typename btree<T>::Elem *tail_;
@@ -93,6 +100,7 @@ private:
 // const_reverse_iterator, similar to 'reverse_iterator'
 template <typename T> class btree_Const_Reverse_Iterator {
 public:
+    friend class btree_Reverse_Iterator<T>;
     typedef std::ptrdiff_t                     difference_type;
     typedef std::forward_iterator_tag          iterator_category;
     typedef T                                  value_type;
@@ -167,6 +175,11 @@ bool btree_Iterator<T>::operator==(const btree_Iterator<T>& other) const {
     return this->pointee_ == other.pointee_;
 }
 
+template <typename T>
+bool btree_Iterator<T>::operator==(const btree_Const_Iterator<T>& other) const {
+    return this->pointee_ == other.pointee_;
+}
+
 template <typename T> typename btree_Reverse_Iterator<T>::reference
 btree_Reverse_Iterator<T>::operator*() const {
     return pointee_->elem_;
@@ -217,6 +230,11 @@ btree_Reverse_Iterator<T> btree_Reverse_Iterator<T>::operator--(int) {
 
 template <typename T>
 bool btree_Reverse_Iterator<T>::operator==(const btree_Reverse_Iterator<T>& other) const {
+    return this->pointee_ == other.pointee_;
+}
+
+template <typename T>
+bool btree_Reverse_Iterator<T>::operator==(const btree_Const_Reverse_Iterator<T>& other) const {
     return this->pointee_ == other.pointee_;
 }
 
