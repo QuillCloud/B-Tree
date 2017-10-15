@@ -222,6 +222,8 @@ std::ostream& operator<<(std::ostream &os, const btree<T> &tree) {
 template <typename T>
 typename btree<T>::iterator btree<T>::find(const T &elem) {
     // start with root
+    if (!head_)
+        return end();
     auto current_node = root;
     do {
         // use binary research to find the proper location of element in current node
@@ -256,6 +258,8 @@ typename btree<T>::iterator btree<T>::find(const T &elem) {
 template <typename T>
 typename btree<T>::const_iterator btree<T>::find(const T& elem) const {
     // function body is quite similar to non-const 'find', but return type is const_iterator
+    if (!head_)
+        return cend();
     auto current_node = root;
     do {
         auto pair = find_ele_location(current_node, elem);
@@ -461,6 +465,5 @@ std::pair<typename std::vector<typename btree<T>::Elem*>::iterator, bool>  btree
     }
     return std::make_pair(nd->Elems_list.begin() + current, find_flag);
 }
-
 
 #endif
